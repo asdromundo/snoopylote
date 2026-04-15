@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <allegro5\allegro.h>
-#include <allegro5\allegro_image.h>
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_image.h>
 
 ALLEGRO_DISPLAY *ventana;
 ALLEGRO_EVENT_QUEUE *colEve;
@@ -67,15 +67,15 @@ int main(void)
         printf("No se pudo cargar la imagen");
         fin = 1;
     }
-    cam = al_load_bitmap("images\\cam.png");
-    cam1 = al_load_bitmap("images\\cam1.png");
-    cam2 = al_load_bitmap("images\\cam2.png");
+    cam = al_load_bitmap("images/cam.png");
+    cam1 = al_load_bitmap("images/cam1.png");
+    cam2 = al_load_bitmap("images/cam2.png");
     if (!cam || !cam1 || !cam2)
     {
         printf("No se pudo visualizar la imagen");
         fin = 1;
     }
-    if (!fin)
+    while (!fin)
     {
         ventana = al_create_display(800, 600);
         al_set_window_title(ventana, "Proyecto");
