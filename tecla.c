@@ -42,7 +42,23 @@ void jugador_cargar_sprites(struct Jugador *jugador)
         printf("No se pudo cargar la imagen.\n");
 }
 
-int main(void)
+// Juego
+typedef struct
+{
+    ALLEGRO_DISPLAY *ventana;
+    ALLEGRO_EVENT_QUEUE *colaEventos;
+} Juego;
+
+int juego_correr(Juego *juego)
+{
+    bool continuar = juego_inicializar(juego);
+    while (continuar)
+    {
+        juego_manejar_eventos(juego);
+    }
+}
+
+int old_main(void)
 {
     // Inicialización
     bool terminar = false;
@@ -74,7 +90,7 @@ int main(void)
     al_register_event_source(colaeventos, al_get_display_event_source(ventana));
     al_register_event_source(colaeventos, al_get_keyboard_event_source());
 
-    // Game Loop
+    // Juego Loop
     while (!terminar)
     {
         // Manejar eventos
