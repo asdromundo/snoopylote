@@ -8,7 +8,9 @@
 #define VELOCIDAD_MOVIMIENTO 200.0f /* pixeles por segundo */
 #define VELOCIDAD_SALTO 300.0f      /* pixeles por segundo */
 #define GRAVEDAD 800.0f             /* aceleracion hacia abajo */
-#define ALTURA_SUELO 550.0f         /* Y donde esta el suelo */
+#define ALTURA_SUELO 510.0f         /* Y donde esta el suelo */
+#define WIDTH 800
+#define HEIGHT 600
 
 int main(void)
 {
@@ -18,7 +20,7 @@ int main(void)
         return 1;
     }
 
-    ALLEGRO_DISPLAY *ventana = al_create_display(700, 600);
+    ALLEGRO_DISPLAY *ventana = al_create_display(WIDTH, HEIGHT);
     if (!ventana)
     {
         fprintf(stderr, "No se pudo crear la ventana.\n");
@@ -40,6 +42,15 @@ int main(void)
 
     al_register_event_source(colaeventos, al_get_display_event_source(ventana));
     al_register_event_source(colaeventos, al_get_keyboard_event_source());
+
+    // Nivel
+
+    ALLEGRO_BITMAP *fondo;
+    fondo = al_load_bitmap("./images/fondo.jpeg");
+    if (!fondo)
+    {
+        fprintf(stderr, "No se pudo cargar el fondo.\n");
+    }
 
     /* Inicializar jugador */
     struct Jugador snoopy1;
@@ -129,6 +140,16 @@ int main(void)
             direccion = -1;
         }
 
+        /* Clamp position to screen bounds */
+        if (snoopy1.pos_x >= WIDTH - 32)
+        {
+            snoopy1.pos_x = WIDTH - 32;
+        }
+        if (snoopy1.pos_x <= 0)
+        {
+            snoopy1.pos_x = 0;
+        }
+
         /* Actualizar estado de caminar */
         jugador_set_estado_caminando(&snoopy1, moviendo, direccion);
 
@@ -155,8 +176,10 @@ int main(void)
         /* Dibujar */
         al_clear_to_color(colorfondo);
 
+        al_draw_scaled_bitmap(fondo, 0, 0, 500, 400, 0, 0, WIDTH, HEIGHT, 0);
+
         /* Dibujar linea de suelo */
-        al_draw_line(0, ALTURA_SUELO, 700, ALTURA_SUELO, al_map_rgb(0, 0, 0), 2);
+        al_draw_line(0, ALTURA_SUELO, WIDTH, ALTURA_SUELO, al_map_rgb(0, 0, 0), 2);
 
         /* Dibujar jugador */
         jugador_dibujar(&snoopy1);

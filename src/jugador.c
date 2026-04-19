@@ -23,8 +23,8 @@ bool jugador_inicializar(struct Jugador *jugador)
     }
 
     /* Inicializar posicion */
-    jugador->pos_x = 500.0f;
-    jugador->pos_y = 200.0f;
+    jugador->pos_x = 100.0f;
+    jugador->pos_y = 510.0f;
 
     /* Inicializar arrays de sprites a NULL */
     for (int i = 0; i < JUGADOR_ANIMACIONES; i++)
@@ -42,8 +42,14 @@ bool jugador_inicializar(struct Jugador *jugador)
     jugador->tiempo_acumulado = 0.0;
     jugador->intervalo_animacion = 0.15; /* 6-7 FPS para animacion */
     jugador->esta_caminando = false;
-    jugador->esta_saltando = true;
+    jugador->esta_saltando = false;
     jugador->direccion = 1; /* Mira a la derecha por defecto */
+
+    // El sprite de Snoopy mide 32 pero lo queremos a 64
+    jugador->tam_x = 32.0;
+    jugador->tam_y = 32.0;
+    jugador->esc_x = 2.0;
+    jugador->esc_y = 2.0;
 
     /* Cargar sprites */
     if (!jugador_cargar_sprites(jugador))
@@ -194,16 +200,13 @@ void jugador_dibujar(const struct Jugador *jugador)
     if (sprite)
     {
         /* Configurar transformacion para voltear sprite si mira a la izquierda */
+        int flag = 0;
         if (jugador->direccion == -1)
         {
-            al_draw_scaled_bitmap(sprite, 0, 0, al_get_bitmap_width(sprite), al_get_bitmap_height(sprite),
-                                  jugador->pos_x + al_get_bitmap_width(sprite), jugador->pos_y,
-                                  -al_get_bitmap_width(sprite), al_get_bitmap_height(sprite), 0);
+            flag = ALLEGRO_FLIP_HORIZONTAL;
         }
-        else
-        {
-            al_draw_bitmap(sprite, jugador->pos_x, jugador->pos_y, 0);
-        }
+
+        al_draw_scaled_bitmap(sprite, 0, 0, jugador->tam_x, jugador->tam_y, jugador->pos_x, jugador->pos_y, jugador->tam_x * 2, jugador->tam_y * 2, flag);
     }
 }
 

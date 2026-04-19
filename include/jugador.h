@@ -41,6 +41,14 @@ struct Jugador
     bool esta_caminando;
     bool esta_saltando;
     int direccion; /* 1 = derecha, -1 = izquierda */
+
+    /* Tamaño */
+    float tam_x;
+    float tam_y;
+
+    /* Escala */
+    float esc_x;
+    float esc_y;
 };
 
 /* Inicializacion y limpieza */
