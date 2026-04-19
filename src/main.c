@@ -5,17 +5,22 @@
 #include <allegro5/allegro_image.h>
 #include "jugador.h"
 
-static const char *JUGADOR_SPRITE = "images/cam.png";
+#define VELOCIDAD_MOVIMIENTO 200.0f /* pixeles por segundo */
+#define VELOCIDAD_SALTO 300.0f      /* pixeles por segundo */
+#define GRAVEDAD 800.0f             /* aceleracion hacia abajo */
+#define ALTURA_SUELO 550.0f         /* Y donde esta el suelo */
 
 int main(void)
 {
-    if (!al_init() || !al_init_primitives_addon() || !al_install_keyboard() || !al_init_image_addon()) {
+    if (!al_init() || !al_init_primitives_addon() || !al_install_keyboard() || !al_init_image_addon())
+    {
         fprintf(stderr, "No se pudo iniciar Allegro o sus addons.\n");
         return 1;
     }
 
     ALLEGRO_DISPLAY *ventana = al_create_display(700, 600);
-    if (!ventana) {
+    if (!ventana)
+    {
         fprintf(stderr, "No se pudo crear la ventana.\n");
         return 1;
     }
@@ -26,7 +31,8 @@ int main(void)
     al_flip_display();
 
     ALLEGRO_EVENT_QUEUE *colaeventos = al_create_event_queue();
-    if (!colaeventos) {
+    if (!colaeventos)
+    {
         fprintf(stderr, "No se pudo crear la cola de eventos.\n");
         al_destroy_display(ventana);
         return 1;
@@ -35,54 +41,132 @@ int main(void)
     al_register_event_source(colaeventos, al_get_display_event_source(ventana));
     al_register_event_source(colaeventos, al_get_keyboard_event_source());
 
-    struct Jugador snoopy1 = { NULL, 50.0f, 50.0f };
-    if (!jugador_inicializar(&snoopy1, JUGADOR_SPRITE)) {
+    /* Inicializar jugador */
+    struct Jugador snoopy1;
+    if (!jugador_inicializar(&snoopy1))
+    {
+        fprintf(stderr, "No se pudo inicializar el jugador.\n");
+        jugador_destruir(&snoopy1);
         al_destroy_event_queue(colaeventos);
         al_destroy_display(ventana);
         return 1;
     }
 
+    /* Variables de fisica */
+    float velocidad_y = 0.0f;
+    bool en_suelo = true;
+    bool saltando = false;
+
+    /* Control de tiempo para delta */
+    ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0); /* 60 FPS */
+    al_start_timer(timer);
+    al_register_event_source(colaeventos, al_get_timer_event_source(timer));
+
     bool terminar = false;
     ALLEGRO_EVENT evento;
-    while (!terminar) {
-        if (al_get_next_event(colaeventos, &evento)) {
-            switch (evento.type) {
-                case ALLEGRO_EVENT_DISPLAY_CLOSE:
+    double delta_tiempo = 0.0;
+    double tiempo_anterior = al_get_time();
+
+    while (!terminar)
+    {
+        double tiempo_actual = al_get_time();
+        delta_tiempo = tiempo_actual - tiempo_anterior;
+        tiempo_anterior = tiempo_actual;
+
+        /* Procesar eventos */
+        while (al_get_next_event(colaeventos, &evento))
+        {
+            switch (evento.type)
+            {
+            case ALLEGRO_EVENT_DISPLAY_CLOSE:
+                terminar = true;
+                break;
+
+            case ALLEGRO_EVENT_KEY_DOWN:
+                switch (evento.keyboard.keycode)
+                {
+                case ALLEGRO_KEY_ESCAPE:
                     terminar = true;
                     break;
-
-                case ALLEGRO_EVENT_KEY_DOWN:
-                    switch (evento.keyboard.keycode) {
-                        case ALLEGRO_KEY_RIGHT:
-                            jugador_mover(&snoopy1, (struct Vec2){10.0f, 0.0f});
-                            break;
-                        case ALLEGRO_KEY_LEFT:
-                            jugador_mover(&snoopy1, (struct Vec2){-10.0f, 0.0f});
-                            break;
-                        case ALLEGRO_KEY_UP:
-                            jugador_mover(&snoopy1, (struct Vec2){0.0f, -10.0f});
-                            break;
-                        case ALLEGRO_KEY_DOWN:
-                            jugador_mover(&snoopy1, (struct Vec2){0.0f, 10.0f});
-                            break;
-                        case ALLEGRO_KEY_ESCAPE:
-                            terminar = true;
-                            break;
-                        default:
-                            break;
+                case ALLEGRO_KEY_SPACE:
+                case ALLEGRO_KEY_UP:
+                    // Salta
+                    if (en_suelo)
+                    {
+                        velocidad_y = -VELOCIDAD_SALTO;
+                        en_suelo = false;
+                        saltando = true;
+                        jugador_set_estado_saltando(&snoopy1, true);
                     }
                     break;
-
                 default:
                     break;
+                }
+                break;
+
+            default:
+                break;
             }
         }
 
+        /* Actualizar estado basado en teclas presionadas */
+        ALLEGRO_KEYBOARD_STATE teclado;
+        al_get_keyboard_state(&teclado);
+
+        bool moviendo = false;
+        int direccion = 0;
+
+        if (al_key_down(&teclado, ALLEGRO_KEY_RIGHT))
+        {
+            snoopy1.pos_x += VELOCIDAD_MOVIMIENTO * delta_tiempo;
+            moviendo = true;
+            direccion = 1;
+        }
+        else if (al_key_down(&teclado, ALLEGRO_KEY_LEFT))
+        {
+            snoopy1.pos_x -= VELOCIDAD_MOVIMIENTO * delta_tiempo;
+            moviendo = true;
+            direccion = -1;
+        }
+
+        /* Actualizar estado de caminar */
+        jugador_set_estado_caminando(&snoopy1, moviendo, direccion);
+
+        /* Aplicar fisica de salto */
+        if (!en_suelo)
+        {
+            velocidad_y += GRAVEDAD * delta_tiempo;
+            snoopy1.pos_y += velocidad_y * delta_tiempo;
+
+            /* Colision con suelo */
+            if (snoopy1.pos_y >= ALTURA_SUELO)
+            {
+                snoopy1.pos_y = ALTURA_SUELO;
+                velocidad_y = 0;
+                en_suelo = true;
+                saltando = false;
+                jugador_set_estado_saltando(&snoopy1, false);
+            }
+        }
+
+        /* Actualizar animacion */
+        jugador_actualizar(&snoopy1, delta_tiempo);
+
+        /* Dibujar */
         al_clear_to_color(colorfondo);
+
+        /* Dibujar linea de suelo */
+        al_draw_line(0, ALTURA_SUELO, 700, ALTURA_SUELO, al_map_rgb(0, 0, 0), 2);
+
+        /* Dibujar jugador */
         jugador_dibujar(&snoopy1);
+
         al_flip_display();
     }
 
+    /* Limpieza */
+    al_stop_timer(timer);
+    al_destroy_timer(timer);
     jugador_destruir(&snoopy1);
     al_destroy_event_queue(colaeventos);
     al_destroy_display(ventana);
